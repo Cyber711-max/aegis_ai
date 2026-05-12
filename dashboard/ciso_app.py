@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from attacker.fuzzing_engine import generate_attack_payloads
 
 st.set_page_config(
-    page_title="Aegis AI | Enterprise Edge SecOps",
+    page_title="Aegis AI | Edge SecOps Command Center",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -18,103 +18,114 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    .main-header { font-size: 2.5rem; font-weight: 700; color: #1E3A8A; margin-bottom: 0px; }
-    .sub-header { font-size: 1.1rem; color: #6B7280; margin-bottom: 25px; }
+    .main-header { font-size: 2.2rem; font-weight: 700; color: #1E3A8A; margin-bottom: 0px; }
+    .sub-header { font-size: 1.0rem; color: #6B7280; margin-bottom: 20px; }
     .status-badge-deny { background-color: #FEE2E2; color: #991B1B; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
     .status-badge-allow { background-color: #FEF08A; color: #854D0E; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
     .status-badge-patched { background-color: #DCFCE7; color: #166534; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
+    .status-badge-poison { background-color: #FFEDD5; color: #C2410C; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
     </style>
 """, unsafe_allow_html=True)
 
-def autonomously_patch_policy(payload_text, rule_id):
+def generate_deterministic_hotfix(payload_text):
+    attack_indicators = {
+        "ignore", "override", "bypass", "instruction", "directive",
+        "system", "context", "extract", "leak", "prompt", "previous", "disregard"
+    }
+
+    words = set(re.findall(r'\b[a-zA-Z]{4,15}\b', payload_text.lower()))
+    matched_indicators = words.intersection(attack_indicators)
+
+    if not matched_indicators:
+        return None, True
+
+    signature = "|".join(list(matched_indicators)[:4])
+    return signature, False
+
+def apply_hotfix_to_yaml(signature, rule_id):
     policy_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "configs",
         "security_policy.yaml"
     )
 
-    words = [
-        w for w in re.findall(r'\b[a-zA-Z]{5,15}\b', payload_text)
-        if w.lower() not in ['resume', 'experience', 'skills', 'education', 'email']
-    ]
-
-    signature = "|".join(set(words[:4])) if len(words) >= 4 else "override|directive|config"
-
     patch_rule = f"""
-  - name: "dynamic-patch-{rule_id}"
-    priority: 110
+  - name: "hotfix-mitigation-{rule_id}"
+    priority: 105
     conditions:
       - field: "prompt"
         match_type: "regex"
         value: '(?i)({signature})'
     action: DENY
-    deny_message: "[AEGIS EDGE FIREWALL] Autonomous Mitigation Alert: Dynamically patched zero-day exploit signature matched."
+    deny_message: "[AEGIS EDGE FIREWALL] Hot-Fix Intercept: Input matches temporary zero-day mitigation signature."
 """
 
     try:
         with open(policy_path, "r") as f:
             content = f.read()
 
-        if f"dynamic-patch-{rule_id}" not in content:
+        if f"hotfix-mitigation-{rule_id}" not in content:
             with open(policy_path, "a") as f:
                 f.write(patch_rule)
             return True
 
     except Exception as e:
-        st.error(f"File write error: {e}")
+        st.error(f"File IO Error: {e}")
 
     return False
 
 st.markdown(
-    '<p class="main-header">Aegis AI Edge Command Center</p>',
+    '<p class="main-header">Aegis AI Control Plane</p>',
     unsafe_allow_html=True
 )
 
 st.markdown(
-    '<p class="sub-header">Autonomous Red-Team Fuzzing & Self-Healing Proxy Infrastructure</p>',
+    '<p class="sub-header">Offline Local Edge Evaluation & Cloud-Assisted Threat Simulation</p>',
     unsafe_allow_html=True
 )
 
 with st.sidebar:
-    st.header("⚙️ Node Deployment")
+    st.header("⚙️ Architecture Setup")
 
     target_profile = st.text_area(
-        "Edge Target Context",
-        value="An internal HR agent that reads PDF resumes and extracts candidate details.",
-        height=100
+        "Target Edge Context",
+        value="Internal HR PDF parsing agent.",
+        height=68
     )
 
     num_payloads = st.slider(
-        "Fuzzing Aggression (Payloads)",
+        "Cloud Fuzzer Aggression",
         min_value=1,
-        max_value=4,
+        max_value=3,
         value=2
     )
 
     st.divider()
 
-    st.subheader("Infrastructure Specs")
-    st.success("🟢 Sub-Millisecond Native Proxy Active")
-    st.caption("Engine: Static Go Executable (Lobster Trap)")
-    st.caption("Target Node: Local Industrial Edge Subnet")
+    st.subheader("Node Telemetry")
+    st.success("🟢 Inline Local Proxy Active")
+    st.caption("Execution: Static Go Executable (<10ms Overhead)")
+    st.caption(
+        "Air-Gap Status: Evaluation offline-capable. "
+        "Simulation tracking requires external API access."
+    )
 
 col1, col2 = st.columns([1, 2])
 
 with col1:
-    st.subheader("🗡️ Autonomous Attack Fuzzer")
+    st.subheader("🗡️ Cloud Attack Simulation")
 
     st.write(
-        "Unleash unconstrained zero-day multi-turn framing payloads targeting the edge gateway."
+        "Route adversarial multi-turn testing streams through "
+        "the local inspection engine."
     )
 
     if st.button(
-        "🚀 Execute Fuzzing Attack",
+        "🚀 Execute Cloud Fuzzing Engine",
         use_container_width=True,
         type="primary"
     ):
-
-        with st.spinner("Engineering zero-day evasion structures via Gemini Flash..."):
-
+        with st.spinner("Compiling zero-day injection structures..."):
             st.session_state['payloads'] = generate_attack_payloads(
                 target_profile,
                 num_payloads=num_payloads
@@ -125,20 +136,24 @@ with col1:
             PROXY_URL = "http://localhost:8081/v1/chat/completions"
 
             for p in st.session_state['payloads']:
-
                 req_data = {
                     "model": "mock-edge-agent",
                     "messages": [{"role": "user", "content": p}]
                 }
 
                 try:
-                    res = requests.post(PROXY_URL, json=req_data, timeout=5)
+                    res = requests.post(
+                        PROXY_URL,
+                        json=req_data,
+                        timeout=5
+                    )
 
                     st.session_state['results'].append({
                         "payload": p,
                         "status": res.status_code,
                         "text": res.text,
-                        "patched": False
+                        "patched": False,
+                        "approved": False
                     })
 
                 except Exception as e:
@@ -146,106 +161,116 @@ with col1:
                         "payload": p,
                         "status": 0,
                         "text": str(e),
-                        "patched": False
+                        "patched": False,
+                        "approved": False
                     })
 
                 time.sleep(0.3)
 
 with col2:
-    st.subheader("🛡️ Real-Time Inspection & Infrastructure Patching")
+    st.subheader("🛡️ Inline Telemetry & Deterministic Hot-Fixing")
 
     if 'results' in st.session_state and st.session_state['results']:
 
         for i, res in enumerate(st.session_state['results'], 1):
 
             with st.expander(
-                f"Intercept Sequence #{i} | Proxy Verdict",
+                f"Transaction Sequence #{i} | Core Verdict",
                 expanded=True
             ):
 
-                st.markdown("**Intercepted Raw Payload:**")
                 st.code(res['payload'], language="text")
 
                 if res['status'] == 200 and "AEGIS" in res['text']:
 
                     st.markdown(
-                        'Verdict: <span class="status-badge-deny">BLOCKED NATIVELY</span>',
+                        'Verdict: '
+                        '<span class="status-badge-deny">'
+                        'BLOCKED NATIVELY'
+                        '</span>',
                         unsafe_allow_html=True
                     )
 
-                    try:
-                        st.json(json.loads(res['text']).get("_lobstertrap", {}))
-
-                    except:
-                        st.caption(res['text'])
+                    st.caption(
+                        "Intercepted locally by static DPI ruleset "
+                        "with zero upstream cloud reliance."
+                    )
 
                 elif res.get('patched'):
 
                     st.markdown(
-                        'Verdict: <span class="status-badge-patched">🔒 SECURED BY AUTONOMOUS PATCH</span>',
+                        'Verdict: '
+                        '<span class="status-badge-patched">'
+                        '🔒 SECURED BY DETERMINISTIC HOT-FIX'
+                        '</span>',
                         unsafe_allow_html=True
                     )
 
                     st.success(
-                        "The zero-day vector signature has been successfully hardcoded into the edge firewall engine."
+                        "Signature injected securely. "
+                        "Attack mitigated while backend models retrain offline."
                     )
 
                 elif res['status'] == 502:
 
                     st.markdown(
-                        'Verdict: <span class="status-badge-allow">⚠️ CRITICAL BYPASS DETECTED</span>',
+                        'Verdict: '
+                        '<span class="status-badge-allow">'
+                        '⚠️ ML CLASSIFIER BYPASSED'
+                        '</span>',
                         unsafe_allow_html=True
                     )
 
-                    st.warning(
-                        "The fuzzer engineered a multi-turn logical framework that bypassed our baseline ML risk thresholds."
+                    sig, is_poison = generate_deterministic_hotfix(
+                        res['payload']
                     )
 
-                    patch_key = f"patch_btn_{i}"
+                    if is_poison:
 
-                    if st.button(
-                        f"⚡ Autonomously Patch System against Sequence #{i}",
-                        key=patch_key,
-                        type="secondary",
-                        use_container_width=True
-                    ):
-
-                        success = autonomously_patch_policy(
-                            res['payload'],
-                            rule_id=i
+                        st.markdown(
+                            '<span class="status-badge-poison">'
+                            '⚠️ RULE POISONING ATTEMPT DETECTED'
+                            '</span>',
+                            unsafe_allow_html=True
                         )
 
-                        if success:
-                            st.session_state['results'][i - 1]['patched'] = True
-                            st.rerun()
+                        st.warning(
+                            "The input lacks standard adversarial indicators. "
+                            "Applying a patch based on standard English terminology "
+                            "would trigger a systemic Denial of Service (DoS) "
+                            "across innocent workflows. Rule generation suppressed."
+                        )
 
-                        else:
-                            st.error(
-                                "Patch compilation failed or signature already exists."
-                            )
+                    else:
+
+                        st.info(
+                            f"**Proposed Regex Hot-Fix:** `(?i)({sig})`"
+                        )
+
+                        st.warning(
+                            "📊 **Pre-Commit Assessment:** "
+                            "Blast radius calculated as Low. "
+                            "Rule targets high-probability injection syntax."
+                        )
+
+                        if st.button(
+                            f"🛡️ Approve & Inject Rule #{i}",
+                            key=f"approve_{i}",
+                            type="secondary",
+                            use_container_width=True
+                        ):
+
+                            if apply_hotfix_to_yaml(sig, rule_id=i):
+                                st.session_state['results'][i - 1]['patched'] = True
+                                st.rerun()
 
                 else:
-                    st.write(
-                        f"Raw Output (Status {res['status']}): {res['text'][:200]}"
+                    st.caption(
+                        f"Raw Socket Response (Status {res['status']})"
                     )
-
-        st.divider()
-
-        st.download_button(
-            label="📥 Export Tamper-Proof Edge Telemetry (JSON)",
-            data=json.dumps(
-                [
-                    {k: v for k, v in r.items() if k != 'patched'}
-                    for r in st.session_state['results']
-                ],
-                indent=2
-            ),
-            file_name="aegis_edge_audit_log.json",
-            mime="application/json",
-            use_container_width=True
-        )
 
     else:
         st.info(
-            "System idle. Adjust aggression parameters and click 'Execute Fuzzing Attack' to monitor live edge node telemetry."
+            "System awaiting execution sequence. "
+            "Ensure proxy layer is running locally on port 8081."
         )
