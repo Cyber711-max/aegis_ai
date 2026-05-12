@@ -1,0 +1,50 @@
+version: "1.0"
+policy_name: "aegis-edge-autonomous-firewall"
+default_action: ALLOW
+
+ingress_rules:
+  - name: "block-high-ml-risk"
+    priority: 100
+    conditions:
+      - field: "risk_score"
+        match_type: "numeric"
+        operator: "gt"
+        value: 0.6
+    action: DENY
+    deny_message: "[AEGIS EDGE FIREWALL] ML Classifier Alert: Input exceeds baseline edge safety threshold."
+
+  - name: "block-native-exfiltration"
+    priority: 95
+    conditions:
+      - field: "contains_exfiltration"
+        match_type: "boolean"
+        value: true
+    action: QUARANTINE
+    deny_message: "[AEGIS EDGE FIREWALL] DPI Alert: Data exfiltration channel intercepted natively."
+
+  - name: "block-native-paths"
+    priority: 90
+    conditions:
+      - field: "contains_sensitive_paths"
+        match_type: "boolean"
+        value: true
+    action: DENY
+    deny_message: "[AEGIS EDGE FIREWALL] DPI Alert: Unauthorized local edge path traversal blocked."
+
+  - name: "dynamic-patch-1"
+    priority: 110
+    conditions:
+      - field: "prompt"
+        match_type: "regex"
+        value: '(?i)(Johnson|Alice|alice|Applicant)'
+    action: DENY
+    deny_message: "[AEGIS EDGE FIREWALL] Autonomous Mitigation Alert: Dynamically patched zero-day exploit signature matched."
+
+  - name: "dynamic-patch-2"
+    priority: 110
+    conditions:
+      - field: "prompt"
+        match_type: "regex"
+        value: '(?i)(example|Smith|smith|Candidate)'
+    action: DENY
+    deny_message: "[AEGIS EDGE FIREWALL] Autonomous Mitigation Alert: Dynamically patched zero-day exploit signature matched."
