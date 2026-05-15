@@ -68,6 +68,8 @@ def apply_hotfix_to_yaml(signature, rule_id):
             with open(policy_path, "a") as f:
                 f.write(patch_rule)
             return True
+        else:
+            return True
 
     except Exception as e:
         st.error(f"File IO Error: {e}")
@@ -116,8 +118,8 @@ with col1:
     st.subheader("🗡️ Cloud Attack Simulation")
 
     st.write(
-        "Route adversarial multi-turn testing streams through "
-        "the local inspection engine."
+        "Route adversarial multi-turn testing streams "
+        "through the local inspection engine."
     )
 
     if st.button(
@@ -138,7 +140,12 @@ with col1:
             for p in st.session_state['payloads']:
                 req_data = {
                     "model": "mock-edge-agent",
-                    "messages": [{"role": "user", "content": p}]
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": p
+                        }
+                    ]
                 }
 
                 try:
@@ -178,7 +185,6 @@ with col2:
                 f"Transaction Sequence #{i} | Core Verdict",
                 expanded=True
             ):
-
                 st.code(res['payload'], language="text")
 
                 if res['status'] == 200 and "AEGIS" in res['text']:
@@ -236,9 +242,10 @@ with col2:
 
                         st.warning(
                             "The input lacks standard adversarial indicators. "
-                            "Applying a patch based on standard English terminology "
-                            "would trigger a systemic Denial of Service (DoS) "
-                            "across innocent workflows. Rule generation suppressed."
+                            "Applying a patch based on standard English "
+                            "terminology would trigger a systemic "
+                            "Denial of Service (DoS) across innocent workflows. "
+                            "Rule generation suppressed."
                         )
 
                     else:
@@ -268,6 +275,25 @@ with col2:
                     st.caption(
                         f"Raw Socket Response (Status {res['status']})"
                     )
+
+        st.divider()
+
+        st.download_button(
+            label="📥 Export Tamper-Proof Edge Telemetry (JSON)",
+            data=json.dumps(
+                [
+                    {
+                        k: v for k, v in r.items()
+                        if k not in ['patched', 'approved']
+                    }
+                    for r in st.session_state['results']
+                ],
+                indent=2
+            ),
+            file_name="aegis_edge_audit_log.json",
+            mime="application/json",
+            use_container_width=True
+        )
 
     else:
         st.info(

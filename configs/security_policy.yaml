@@ -48,3 +48,21 @@ ingress_rules:
         value: '(?i)(example|Smith|smith|Candidate)'
     action: DENY
     deny_message: "[AEGIS EDGE FIREWALL] Autonomous Mitigation Alert: Dynamically patched zero-day exploit signature matched."
+
+  - name: "hotfix-mitigation-1"
+    priority: 105
+    conditions:
+      - field: "prompt"
+        match_type: "regex"
+        value: '(?i)(directive|override|prompt|system)'
+    action: DENY
+    deny_message: "[AEGIS EDGE FIREWALL] Hot-Fix Intercept: Input matches temporary zero-day mitigation signature."
+
+  - name: "hotfix-mitigation-2"
+    priority: 105
+    conditions:
+      - field: "prompt"
+        match_type: "regex"
+        value: '(?i)(system)'
+    action: DENY
+    deny_message: "[AEGIS EDGE FIREWALL] Hot-Fix Intercept: Input matches temporary zero-day mitigation signature."
